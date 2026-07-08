@@ -15,19 +15,25 @@ from datetime import datetime, timezone
 from contatos import carregar_json
 from contatos import resolver_ip
 from contatos import procura_contato
-from contatos import carregar_eu
+from contatos import carregar_parametros
 from contatos import salvar_json
 
 
 fila_msg = queue.Queue()    
 conexoes_ativas = {}
+keep_alive = {}
+Inbound = []
+Outbound = []
 
 def enviar_mensagem(mensagem, ip, port):
     global conexoes_ativas
     global fila_msg
+    global Inbound
+    global Outbound
+    global keep_alive
 
-    eu = carregar_eu()
-    meu_id = f"{eu[0]['Name']}@{eu[0]['@']}"
+    parametros = carregar_parametros()
+    meu_id = f"{parametros['Name']}@{parametros['@']}"
 
     helloo = {
         "type": "HELLO",
@@ -39,7 +45,7 @@ def enviar_mensagem(mensagem, ip, port):
     
     chave = (ip, int(port))
 
-    if chave not in conexoes_ativas:        #se nao tem: manda um helloo e cria
+    if chave not in conexoes_ativas:        #se nao tem: tenta mandar um HELLO e cria
         try:                    
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(7.0)
@@ -54,12 +60,19 @@ def enviar_mensagem(mensagem, ip, port):
                 if resposta_json.get("type") == "HELLO_OK":
                     s.settimeout(None)
                     conexoes_ativas[chave] = s
+                    
+                    keep_alive[chave] = 0
 
                     lista = carregar_json()
                     for c in lista:
                         if c['IP'] == ip and int(c['Port']) == int(port):
                             c['Active'] = "True"
                     salvar_json(lista,"CONTATOS.json")
+                    
+                    try:
+                        dst = resolver_ip(ip,port)
+                        Outbound.append(dst)
+                    except: pass
                     
                 else:
                     erro = {"type": "ERRO", "payload": "Não recebi HELLO_OK"}
@@ -91,11 +104,11 @@ def enviar_mensagem(mensagem, ip, port):
 
 ##################### HELLO #####################
 def hello(dst):
-    eu = carregar_eu()
-    meu_id = f"{eu[0]['Name']}@{eu[0]['@']}"
+    parametros = carregar_parametros()
+    meu_id = f"{parametros['Name']}@{parametros['@']}"
     mensagem = {}
     uid = str(uuid.uuid4())
-    time = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    time = datetime.now(timezone.utc).isoformat()
     
     mensagem["type"] = "HELLO"
     mensagem["peer_id"] = meu_id
@@ -128,8 +141,8 @@ def ping(dst):
 
 ##################### SEND #####################
 def send(payload, dst):
-    eu = carregar_eu()
-    meu_id = f"{eu[0]['Name']}@{eu[0]['@']}"
+    parametros = carregar_parametros()
+    meu_id = f"{parametros['Name']}@{parametros['@']}"
     mensagem = {}
     uid = str(uuid.uuid4())
     #time = datetime.now(timezone.utc).isoformat()
@@ -151,8 +164,8 @@ def send(payload, dst):
 
 ##################### PUB #####################
 def pub(payload, dst):
-    eu = carregar_eu()
-    meu_id = f"{eu[0]['Name']}@{eu[0]['@']}"
+    parametros = carregar_parametros()
+    meu_id = f"{parametros['Name']}@{parametros['@']}"
     mensagem = {}
     uid = str(uuid.uuid4())
     #time = datetime.now(timezone.utc).isoformat()
@@ -174,8 +187,8 @@ def pub(payload, dst):
 
 ##################### BYE #####################
 def bye(dst):
-    eu = carregar_eu()
-    meu_id = f"{eu[0]['Name']}@{eu[0]['@']}"
+    parametros = carregar_parametros()
+    meu_id = f"{parametros['Name']}@{parametros['@']}"
     mensagem = {}
     uid = str(uuid.uuid4())
     
@@ -189,15 +202,14 @@ def bye(dst):
     ip,port = procura_contato(dst)   
     funcionou = enviar_mensagem(mensagem, ip, port)
 
-    IPport = (ip,port)
-    if IPport in conexoes_ativas:
-        conexao = conexoes_ativas[IPport]
+    chave = (ip,port)
+    if chave in conexoes_ativas:
+        conexao = conexoes_ativas[chave]
         try:
             conexao.close()
         except: pass
         
-        if IPport in conexoes_ativas:
-            del conexoes_ativas[IPport]
+        del conexoes_ativas[IPport]
 
     return funcionou
     
