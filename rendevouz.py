@@ -10,36 +10,17 @@ import socket
 
 import contatos
 
-rendevouz = "RENDEVOUZ.json"
+parametros = contatos.carregar_parametros()
 
-def carregar_json():
-    if not os.path.exists(rendevouz):
-        server = {
-            "Name": "Rendevouz",
-            "IP": "192.168.50.10",
-            "Port": "8080"
-        }
-        
-        with open(rendevouz, 'w', encoding='utf-8') as arquivo:
-            json.dump(server, arquivo, indent=4)
+server_IP = parametros.get("IP Rendevouz")
+server_port = int(parametros.get("Port Rendevouz"))
 
-    with open(rendevouz, 'r', encoding='utf-8') as arquivo:
-        dados = json.load(arquivo)
-        
-    Name = dados.get("Name")
-    IP = dados.get("IP")
-    Port = dados.get("Port")
-
-    return Name, IP, Port
-
-
-server_name, server_IP, server_port = carregar_json()
 
 def send_server(mensagem):
     try:
         conexao = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conexao.settimeout(5.0)
-        conexao.connect((server_IP, int(server_port)))
+        conexao.connect((server_IP, server_port))
         mensagem_json = json.dumps(mensagem) + "\n"
         conexao.sendall(mensagem_json.encode('utf-8'))
 

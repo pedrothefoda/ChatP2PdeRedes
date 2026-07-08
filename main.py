@@ -22,31 +22,36 @@ import comandos
 comandos.encerrar_tudo()
 
 # --- Configurações Iniciais ---
-porta = 4000
-ttl = 7200
+parametros = contatos.carregar_parametros()
+porta = parametros.get("Port")
+ttl = parametros.get("TTL")
 
 print("Abrindo o chat...\n")
 
-print("Registrar no Rendevouz: ")
-name = input("--> Nome: ")
-namespace = input("--> Dominio: ")
-print()
+conectado = False
+while not conectado:
+    print("Registrar no Rendevouz: ")
+    name = input("--> Nome: ")
+    namespace = input("--> Dominio: ")
+    print()
 
-meu_id = name + "@" + namespace
-eu = contatos.carregar_eu()
-eu = eu[0]
-eu['Name'] = name
-eu['@'] = namespace
+    meu_id = name + "@" + namespace
+    parametros['Name'] = name
+    parametros['@'] = namespace
 
 
-resposta = rendevouz.register(namespace, name, porta, ttl)
-if resposta.get("status") == "OK": 
-    print(f"{name}@{namespace} registrado com sucesso.\n")
-    eu['IP'] = resposta.get("ip")
-    eu['Port'] = resposta.get("port") 
+    resposta = rendevouz.register(namespace, name, porta, ttl)
+    if resposta.get("status") == "OK":
+        conectado = True
+        print(f"{name}@{namespace} registrado com sucesso.\n")
+        parametros['IP'] = resposta.get("ip")
+        parametros['Port'] = resposta.get("port")
+    else:
+        print(f"Conexão com servidor Rendevoux FALHOU... Tente novamente")
+ 
 
-eu = [eu]
-contatos.salvar_json(eu, "EU.json")
+contatos.salvar_json(parametros, "PARAMETROS.json")
+
 
 procurador = threading.Thread(target=conexoes.procura_conexao, args=(4000,))
 procurador.daemon = True
