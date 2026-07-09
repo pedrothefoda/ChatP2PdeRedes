@@ -90,26 +90,11 @@ def unregister(namespace, name=False, port=False):
 
 
 if __name__ == "__main__":
-    eu_json = "EU.json"
-    if os.path.exists(eu_json):
-        with open(eu_json, 'r', encoding='utf-8') as arquivo:
-            eu = json.load(arquivo)
-    else:
-        eu = [
-            {
-            "Name": "pedro",
-            "@": "unb",
-            "IP": "177.18.227.163",
-            "Port": "4000",
-            "Active": "True",
-            "RTT" : None
-            }
-        ]
         
-    dom = eu[0]['@']
-    nome = eu[0]['Name']
-    porta = eu[0]["Port"]
-    ttl = 500
+    dom = parametros['@']
+    nome = parametros['Name']
+    porta = parametros["Port"]
+    ttl = parametros['TTL']
     print(register(dom,nome,porta,ttl))
     peers = discover()
     print(f"Pares descobertos:")

@@ -49,7 +49,27 @@ def encerrar_tudo():
 
 def pega_comando():
     pega = True
+    parametros = contatos.carregar_parametros()
+    ttl = int(parametros.get("TTL"))
     while pega:
+        ttl = ttl - 1
+        if ttl < 60:
+            reconet = input("Seu TTL está acabando, gostaria de se registrar novamente ao Rendevouz? ")
+            if reconet:
+                parametros = contatos.carregar_parametros()
+                nome = parametros.get("Name")
+                space = parametros.get("@")
+                porta = int(parametros.get("Port"))
+                ttl = int(parametros.get("TTL"))
+                resposta = rendevouz.register(space,nome,porta,ttl)
+                if resposta.get("status") == "OK":
+                    conectado = True
+                    print(f"{nome}@{space} registrado novamente com sucesso.\n")
+                    parametros['IP'] = resposta.get("ip")
+                    parametros['Port'] = resposta.get("port")
+                else:
+                    print(f"Conexão com servidor Rendevouz FALHOU... Confira os parametros e Tente novamente\n")
+            
         comando = input("Insira um comando: \n")
         comando = comando.split()
         print()

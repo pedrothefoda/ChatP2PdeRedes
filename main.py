@@ -23,8 +23,8 @@ comandos.encerrar_tudo()
 
 # --- Configurações Iniciais ---
 parametros = contatos.carregar_parametros()
-porta = parametros.get("Port")
-ttl = parametros.get("TTL")
+porta = int(parametros.get("Port"))
+ttl = int(parametros.get("TTL"))
 
 print("Abrindo o chat...\n")
 
@@ -47,13 +47,14 @@ while not conectado:
         parametros['IP'] = resposta.get("ip")
         parametros['Port'] = resposta.get("port")
     else:
-        print(f"Conexão com servidor Rendevoux FALHOU... Tente novamente")
+        print(f"Conexão com servidor Rendevouz FALHOU... Confira os parametros e Tente novamente")
  
 
 contatos.salvar_json(parametros, "PARAMETROS.json")
 
 
-procurador = threading.Thread(target=conexoes.procura_conexao, args=(4000,))
+
+procurador = threading.Thread(target=conexoes.procura_conexao, args=(porta,))
 procurador.daemon = True
 procurador.start()
     
@@ -72,6 +73,10 @@ pegador.start()
 mantedor = threading.Thread(target=conexoes.mantem_conexoes)
 mantedor.daemon = True
 mantedor.start()
+
+descobridor = threading.Thread(target=conexoes.disco)
+descobridor.daemon = True
+descobridor.start()
 
 
 

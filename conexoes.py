@@ -14,11 +14,22 @@ from datetime import datetime, timezone
 
 import contatos
 import mensagens
+import rendevouz
 
 
-escutadas = set()           #lista especial confia
+
+############################### DISCOVERS AUTOMATICOS ###############################
+def disco():
+    parametros = contatos.carregar_parametros()
+    tempo = int(parametros.get("DISCOVER"))
+    while True:
+        rendevouz.discover()
+        time.sleep(tempo)
+
+
 
 ############################### ACEITA CONEXÕES ###############################
+escutadas = set()           #lista especial confia
 def procura_conexao(porta):
     global escutadas
     try:
@@ -96,7 +107,8 @@ def mantem_conexoes():
                        
         time.sleep(tempo)
          
- 
+
+
 ############################### TENTA ESCUTAR UM CONEXÃO ATIVA ###############################
 def minhas_conexoes():
     global escutadas
@@ -240,13 +252,13 @@ def responde():
                 delay = agora - timedele
                 delay = delay.total_seconds()       # Half Trip Time
                 if delay < 0:
-                    print("\t delay negativo AKI no ping")
+                    delay = delay * (-1)
+                    #print("\t delay negativo AKI no ping")
             
                 lista = contatos.carregar_json()
                 for c in lista:
                     if c['IP'] == ip and int(c['Port']) == int(port):
                         c['RTT'].append(delay*2)
-                        #c['PONG'] = 0
                 
                 contatos.salvar_json(lista, 'CONTATOS.json')
 
@@ -256,6 +268,7 @@ def responde():
             mensagens.keep_alive[IPport] = 0
             agora = datetime.now(timezone.utc).isoformat()
             timedele = msg.get("timestamp")
+            #print(f"timedele {timedele} meutime {agora}")
             try:
                 timedele = datetime.fromisoformat(timedele)
             except Exception as e:
@@ -269,7 +282,8 @@ def responde():
             delay = agora - timedele
             delay = delay.total_seconds()       # Half Trip Time
             if delay < 0:
-                    print("\t delay negativo AKI no PONG")
+                delay = delay * (-1)
+                #print("\t delay negativo AKI no PONG")
 
             if __name__ == "__main__": print(f"-> PONG recebido\n")
                     
@@ -277,7 +291,6 @@ def responde():
             for c in lista:
                 if c['IP'] == ip and int(c['Port']) == int(port):
                     c['RTT'].append(delay*2)
-                    #c['PONG'] = 0
                     
             contatos.salvar_json(lista, 'CONTATOS.json')
             
@@ -300,7 +313,7 @@ def responde():
             hora = int(hora) - 3
             src = msg.get("src")
             payload = msg.get("payload")
-            print(f"\n[{dia}/{mes}|{hora}h{minuto}|{src}]-> {payload} \n")
+            print(f"\n[{dia}/{mes}|{hora}H{minuto}|{src}]-> {payload} \n")
 
             if __name__ == "__main__": print(f"-> ACK enviado\n")
 
@@ -315,7 +328,7 @@ def responde():
             hora = int(hora) - 3
             src = msg.get("src")
             payload = msg.get("payload")
-            print(f"\n[{dia}/{mes}|{hora}h{minuto}|{src}]-> {payload} \n")
+            print(f"\n[{dia}/{mes}|{hora}H{minuto}|{src}]-> {payload} \n")
             
 
         ######################## BYE ########################
